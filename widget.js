@@ -22,7 +22,6 @@ isitup = {
 	// - Inserts the empty widget html
 	// - Makes the api requests
 	exec: function() {
-
 		// Shorten the most used variables
 		var doc = document,
 			nodes = this.nodes,
@@ -103,73 +102,78 @@ isitup = {
 	update: function(result) {
 		// Update widget with the latest widget nodes
 		var node = document.getElementsByClassName("isitup-widget"),
-			widget = null;
+			widget = [];
 
 		// Go through the widgets and find the one we're updating
 		var i, len;
 		for (i = 0, len = node.length; i < len; i++) {
 			if (node[i].getAttribute("data-domain") == result.domain && !node[i].hasAttribute("data-checked")) {
 				// Select the widget
-				widget = node[i];
+				widget.push(node[i]);
 				// Update it with the checked parameter
-				widget.setAttribute("data-checked", true);
+				node[i].setAttribute("data-checked", true);
 			}
 		}
 
-		// Look at the status code from the response
-		switch (result.status_code) {
-			// If the site is online
-		case 1:
-			// Change the icon to green
-			this.set_image("online", widget);
+		// Loop incase a domain is used in more than one widget
+		var j;
+		for (j = 0, len = widget.length; j < len; j++) {
 
-			// If an uplink has been set
-			if (widget.hasAttribute("data-uplink")) {
-				// Change the link to the user defined uplink
-				this.set_link(widget.getAttribute("data-uplink"), widget);
+			// Look at the status code from the response
+			switch (result.status_code) {
+				// If the site is online
+			case 1:
+				// Change the icon to green
+				this.set_image("online", widget[j]);
+
+				// If an uplink has been set
+				if (widget[j].hasAttribute("data-uplink")) {
+					// Change the link to the user defined uplink
+					this.set_link(widget[j].getAttribute("data-uplink"), widget[j]);
+				}
+				break;
+
+				// If it's offline
+			case 2:
+				// Change the icon to red
+				this.set_image("offline", widget[j]);
+
+				// If a downlink has been set
+				if (widget[j].hasAttribute("option-downlink")) {
+					// Change the link to the user defined downlink
+					this.set_link(widget[j].getAttribute("data-downlink"), widget[j]);
+				}
+				break;
+
+				// If the domain is invalid
+			case 3:
+				// Set the image to yellow
+				this.set_image("error", widget[j]);
+
+				// Set the link to http://isitup.org/d/<data-domain>
+				this.set_link(this.server + "d/" + widget[j].getAttribute("data-domain"), widget[j]);
+				break;
 			}
-			break;
-
-			// If it's offline
-		case 2:
-			// Change the icon to red
-			this.set_image("offline", widget);
-
-			// If a downlink has been set
-			if (widget.hasAttribute("option-downlink")) {
-				// Change the link to the user defined downlink
-				this.set_link(widget.getAttribute("data-downlink"), widget);
-			}
-			break;
-
-			// If the domain is invalid
-		case 3:
-			// Set the image to yellow
-			this.set_image("error", widget);
-
-			// Set the link to http://isitup.org/d/<data-domain>
-			this.set_link(this.server + "d/" + widget.getAttribute("data-domain"), widget);
-			break;
 		}
 	},
 
 	// Function to set the src parameter of a given <img> tag
-	// @input image (str)	name of the image to insert
-	// @input node			<img> node to insert the image into
+	// @input image (str)    name of the image to insert
+	// @input node            <img> node to insert the image into
 	set_image: function(image, node) {
 		node.getElementsByClassName("isitup-icon")[0].firstChild.setAttribute("src", this.server + "widget/img/" + image + ".png");
 	},
 
 	// Function to set the href parameter of a given <a> tag
-	// @input link (str)	url to insert
-	// @input node			<a> node to insert the url into
+	// @input link (str)    url to insert
+	// @input node            <a> node to insert the url into
 	set_link: function(link, node) {
 		node.getElementsByClassName("isitup-domain")[0].firstChild.setAttribute("href", link);
 	},
 
 	// A simple regex test for a domain
-	// @input domain (str)	domain to test
-	// @output boolean		true if domain is valid, otherwise false
+	// @input domain (str)    domain to test
+	// @output boolean        true if domain is valid, otherwise false
 	is_domain: function(domain) {
 		re = /^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}$/;
 		return (re.test(domain)) ? true : false;
@@ -187,4 +191,4 @@ window.onload = function() {
 	if (_onload) {
 		_onload();
 	}
-};
+};?
