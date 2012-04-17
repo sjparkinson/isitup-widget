@@ -36,7 +36,7 @@ isitup = {
 			var HTML = "";
 
 			// Domain name from the widget
-			var domain = node[i].dataset["domain"]
+			var domain = node[i].getAttribute("data-domain");
 
 			// No option-domain set...
 			if (!domain) {
@@ -79,7 +79,7 @@ isitup = {
 	},
 
 	// Function to inject our jsonp into the <head>
-	// @input domain (str)    domain of the site to be checked
+	// @input domain (str)    	domain of the site to be checked
 	get_json: function(domain) {
 		var t = "script",
 			d = document;
@@ -93,7 +93,7 @@ isitup = {
 	// Our callback function when the JSON response is downloaded
 	// - Finds the widget to update
 	// - Updates the widgets image & link
-	// @input result (json)   JSON object from the api response
+	// @input result (json)   	JSON object from the api response
 	update: function(result) {
 		// Update widget with the latest widget nodes
 		var node = document.getElementsByClassName("isitup-widget"),
@@ -102,7 +102,7 @@ isitup = {
 		// Go through the widgets and find the one we're updating
 		var i, len;
 		for (i = 0, len = node.length; i < len; i++) {
-			if (node[i].dataset["domain"] == result.domain && !node[i].dataset["checked"]) {
+			if (node[i].getAttribute("data-domain") == result.domain && !node[i].getAttribute("data-checked")) {
 				// Select the widget
 				widget.push(node[i]);
 				// Update it with the checked parameter
@@ -124,7 +124,7 @@ isitup = {
 				// If an uplink has been set
 				if (widget[j].hasAttribute("data-uplink")) {
 					// Change the link to the user defined uplink
-					this.set_link(widget[j].dataset["uplink"], widget[j]);
+					this.set_link(widget[j].getAttribute("data-uplink"), widget[j]);
 				}
 				break;
 
@@ -136,7 +136,7 @@ isitup = {
 				// If a downlink has been set
 				if (widget[j].hasAttribute("data-downlink")) {
 					// Change the link to the user defined downlink
-					this.set_link(widget[j].dataset["downlink"], widget[j]);
+					this.set_link(widget[j].getAttribute("data-downlink"), widget[j]);
 				}
 				break;
 
@@ -146,34 +146,38 @@ isitup = {
 				this.set_image("error", widget[j]);
 
 				// Set the link to http://isitup.org/d/<data-domain>
-				this.set_link(this.server + "d/" + widget[j].dataset["domain"], widget[j]);
+				this.set_link(this.server + "d/" + widget[j].getAttribute("data-domain"), widget[j]);
 				break;
 			}
 		}
 	},
 
 	// Function to set the src parameter of a given <img> tag
-	// @input image (str)    name of the image to insert
-	// @input node            <img> node to insert the image into
+	// @input image (str)    	name of the image to insert
+	// @input node            	<img> node to insert the image into
 	set_image: function(image, node) {
 		node.getElementsByClassName("isitup-icon")[0].firstChild.setAttribute("src", this.server + "widget/img/" + image + ".png");
 	},
 
 	// Function to set the href parameter of a given <a> tag
-	// @input link (str)    url to insert
-	// @input node            <a> node to insert the url into
+	// @input link (str)    	url to insert
+	// @input node            	<a> node to insert the url into
 	set_link: function(link, node) {
 		node.getElementsByClassName("isitup-domain")[0].firstChild.setAttribute("href", link);
 	},
 
 	// A simple regex test for a domain
-	// @input domain (str)    domain to test
-	// @output boolean        true if domain is valid, otherwise false
+	// @input domain (str)    	domain to test
+	// @output boolean        	true if domain is valid, otherwise false
 	is_domain: function(domain) {
 		re = /^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}$/;
 		return (re.test(domain)) ? true : false;
 	},
 
+	// Checks if a value is in a list
+	// @input value				value to check for
+	// @input list				list to go through
+	// @output boolean
 	in_list: function(value, list) {
 		var i, len;
 		for (i = 0, len = list.length; i < len; i++) {
