@@ -5,6 +5,7 @@
 * Version: 1.0 beta
 * Author: Sam Parkinson (@r3morse)
 * jsFiddle: http://jsfiddle.net/sparkinson/tspPU/
+* GitHub: https://github.com/r3morse/isitup-widget
 *
 * To-Do:
 * - make custom getelementsbyclassname()
@@ -24,35 +25,24 @@ isitup = {
 	exec: function() {
 		// Shorten the most used variables
 		var doc = document,
-			nodes = this.nodes,
-			server = this.server;
+			node = this.nodes,
+			server = this.server,
+			requested = [];
 
 		var i, len;
-		for (i = 0, len = nodes.length; i < len; i++) {
+		for (i = 0, len = node.length; i < len; i++) {
 
 			// Initalise our html vaiable
 			var HTML = "";
 
-			// List of parameters from the widget: [domain, uplink, downlink]
-			var option = [
-				nodes[i].getAttribute("data-domain"),
-				nodes[i].getAttribute("data-uplink"),
-				nodes[i].getAttribute("data-downlink")
-				];
+			// Domain name from the widget
+			var domain = node[i].dataset["domain"]
 
 			// No option-domain set...
-			if (!option[0]) {
-				// So set it to isitup.org
-				option[0] = "isitup.org";
-				nodes[i].setAttribute("data-domain", option[0]);
-			}
-
-			// Change any null links to default links
-			var j;
-			for (j = 1; j <= 2; j++) {
-				if (!option[j]) {
-					option[j] = server + option[0];
-				}
+			if (!domain) {
+				// So set it to the hostname
+				domain = window.location.hostname;
+				node[i].setAttribute("data-domain", domain);
 			}
 
 			// Icon div
@@ -62,20 +52,25 @@ isitup = {
 
 			// Domain div
 			HTML += '<div class="isitup-domain">';
-			HTML += '<a href="' + server + option[0] + '">' + option[0] + '</a>';
+			HTML += '<a href="' + server + domain + '">' + domain + '</a>';
 			HTML += '</div>';
 
 			// Insert our widget html into its parent div
-			nodes[i].innerHTML = HTML;
+			node[i].innerHTML = HTML;
 
 			// Check the domain is valid
-			if (this.is_domain(option[0])) {
-				// Inset our JSON request into the <head>
-				this.get_json(option[0]);
+			if (this.is_domain(domain)) {
+				// And the json hasn't already been requested
+				if (!this.in_list(domain, requested)) {
+					// Insert our JSON request into the <head>
+					this.get_json(domain);
+					requested.push(domain);
+				}
+			// If the domain is invalid
 			} else {
 				// Run update() with an invalid domain response locally
 				this.update({
-					"domain": option[0],
+					"domain": domain,
 					"status_code": 3
 				});
 			}
@@ -107,7 +102,7 @@ isitup = {
 		// Go through the widgets and find the one we're updating
 		var i, len;
 		for (i = 0, len = node.length; i < len; i++) {
-			if (node[i].getAttribute("data-domain") == result.domain && !node[i].hasAttribute("data-checked")) {
+			if (node[i].dataset["domain"] == result.domain && !node[i].dataset["checked"]) {
 				// Select the widget
 				widget.push(node[i]);
 				// Update it with the checked parameter
@@ -121,7 +116,7 @@ isitup = {
 
 			// Look at the status code from the response
 			switch (result.status_code) {
-				// If the site is online
+			// If the site is online
 			case 1:
 				// Change the icon to green
 				this.set_image("online", widget[j]);
@@ -129,29 +124,29 @@ isitup = {
 				// If an uplink has been set
 				if (widget[j].hasAttribute("data-uplink")) {
 					// Change the link to the user defined uplink
-					this.set_link(widget[j].getAttribute("data-uplink"), widget[j]);
+					this.set_link(widget[j].dataset["uplink"], widget[j]);
 				}
 				break;
 
-				// If it's offline
+			// If it's offline
 			case 2:
 				// Change the icon to red
 				this.set_image("offline", widget[j]);
 
 				// If a downlink has been set
-				if (widget[j].hasAttribute("option-downlink")) {
+				if (widget[j].hasAttribute("data-downlink")) {
 					// Change the link to the user defined downlink
-					this.set_link(widget[j].getAttribute("data-downlink"), widget[j]);
+					this.set_link(widget[j].dataset["downlink"], widget[j]);
 				}
 				break;
 
-				// If the domain is invalid
+			// If the domain is invalid
 			case 3:
 				// Set the image to yellow
 				this.set_image("error", widget[j]);
 
 				// Set the link to http://isitup.org/d/<data-domain>
-				this.set_link(this.server + "d/" + widget[j].getAttribute("data-domain"), widget[j]);
+				this.set_link(this.server + "d/" + widget[j].dataset["domain"], widget[j]);
 				break;
 			}
 		}
@@ -177,6 +172,16 @@ isitup = {
 	is_domain: function(domain) {
 		re = /^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}$/;
 		return (re.test(domain)) ? true : false;
+	},
+
+	in_list: function(value, list) {
+		var i, len;
+		for (i = 0, len = list.length; i < len; i++) {
+			if (list[i] == value) {
+				return true;
+			}
+		}
+		return false;
 	}
 };
 
