@@ -85,11 +85,10 @@
         // @input domain (str)        domain of the site to be checked
         get_json: function (domain)
         {
-            var t = "script",
-                d = document;
+            var t = "script";
 
-            var j = d.createElement(t),
-                p = d.getElementsByTagName(t)[0];
+            var j = doc.createElement(t),
+                p = doc.getElementsByTagName(t)[0];
 
             j.type = "text/javascript";
 
