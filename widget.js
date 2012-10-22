@@ -232,10 +232,4 @@ var isitup = {
 
     // Hook widget run method to the onload event.
     window.addEventListener("load", function() { isitup.run(); }, false);
-
-    // Add the object as a window child so it can be used by developers if required.
-    window.isitup = isitup;
-
-    // Remove the global variable.
-    delete isitup;
 }());
