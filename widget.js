@@ -11,9 +11,13 @@
 ///
 // Define our object and methods.
 ///
-var isitup = {
+var isitup =
+{
     // Our api host.
     server: "http://isitup.org/",
+
+    // Domains we have made an API request for.
+    requested: [],
 
     // The main function:
     // - Parses each widget parameters
@@ -21,52 +25,35 @@ var isitup = {
     // - Makes the api requests
     run: function()
     {
-        // Shorten the most used variables.
-        var node = document.getElementsByClassName("isitup-widget"),
-            server = this.server,
-            requested = [];
+        // An array of the widgets to update.
+        var nodes = document.getElementsByClassName("isitup-widget");
 
-        for (var i = 0; i < node.length; i++)
+        for (var i = 0; i < nodes.length; i++)
         {
+            // Domain name from the widget.
+            var domain = nodes[i].getAttribute("data-domain");
+
             // Initalise our html vaiable.
             var HTML = "";
 
-            // Domain name from the widget.
-            var domain = node[i].getAttribute("data-domain");
-
-            // No option-domain set.
-            if (!domain)
-            {
-                // So set it to the hostname.
-                domain = window.location.hostname;
-
-                node[i].setAttribute("data-domain", domain);
-            }
-
             // Icon div.
             HTML += '<div class="isitup-icon">';
-            HTML += '<img src="' + server + 'widget/img/loader.gif" width="16px" height="16px" style="vertical-align: middle;" />';
+            HTML += '<img src="' + this.server + 'widget/img/loader.gif" width="16px" height="16px" style="vertical-align: middle;" />';
             HTML += '</div>';
 
             // Domain div.
             HTML += '<div class="isitup-domain">';
-            HTML += '<a href="' + server + domain + '">' + domain + '</a>';
+            HTML += '<a href="' + this.server + domain + '">' + domain + '</a>';
             HTML += '</div>';
 
             // Insert our widget html into its parent div.
-            node[i].innerHTML = HTML;
+            nodes[i].innerHTML = HTML;
 
             // Check the domain is valid.
             if (this.is_domain(domain))
             {
-                // And the json hasn't already been requested.
-                if (!this.in_list(domain, requested))
-                {
-                    // Insert our JSON request into the <head>.
-                    this.get_json(domain);
-
-                    requested.push(domain);
-                }
+                // Insert our JSON request into the <head>.
+                this.get_json(domain);
             }
             else // If the domain is invalid.
             {
@@ -85,17 +72,22 @@ var isitup = {
     // @input domain              domain of the site to be checked
     get_json: function(domain)
     {
-        var t = "script";
+        // Check the json hasn't already been requested.
+        if (!this.in_list(domain, this.requested))
+        {
+            var t = "script";
 
-        var j = document.createElement(t),
-            p = document.getElementsByTagName(t)[0],
-            r = Math.random().toString(32).substr(2, 8);
+            var j = document.createElement(t),
+                p = document.getElementsByTagName(t)[0];
 
-        j.type = "text/javascript";
+            j.type = "text/javascript";
 
-        j.src = this.server + domain + ".json?callback=isitup.update&nocache=" + r;
+            j.src = this.server + domain + ".json?callback=isitup.update";
 
-        p.parentNode.insertBefore(j, p);
+            p.parentNode.insertBefore(j, p);
+
+            this.requested.push(domain);
+        }
     },
 
     // Our callback function when the JSON response is downloaded.
@@ -105,59 +97,55 @@ var isitup = {
     update: function(result)
     {
         // Update widget with the latest widget nodes.
-        var node = document.getElementsByClassName("isitup-widget");
+        var nodes = document.getElementsByClassName("isitup-widget");
 
         // Go through the widgets and find the one we're updating.
-        for (var i = 0; i < node.length; i++)
+        for (var i = 0; i < nodes.length; i++)
         {
-            if (node[i].getAttribute("data-domain") == result.domain
-            && !node[i].getAttribute("data-checked"))
+            if (nodes[i].getAttribute("data-domain") === result.domain && !nodes[i].getAttribute("data-checked"))
             {
                 // Look at the status code from the response.
                 switch (result.status_code)
                 {
-                // If the site is online.
-                case 1:
-                    // Change the icon to green.
-                    this.set_image("online", node[i]);
+                    // If the site is online.
+                    case 1:
+                        this.update_widget("online", "data-uplink", nodes[i]);
 
-                    // If an uplink has been set.
-                    if (node[i].hasAttribute("data-uplink"))
-                    {
-                        // Change the link to the user defined uplink.
-                        this.set_link(node[i].getAttribute("data-uplink"), node[i]);
-                    }
-
-                    break;
+                        break;
 
                     // If it's offline.
-                case 2:
-                    // Change the icon to red.
-                    this.set_image("offline", node[i]);
+                    case 2:
+                        this.update_widget("offline", "data-downlink", nodes[i]);
 
-                    // If a downlink has been set.
-                    if (node[i].hasAttribute("data-downlink"))
-                    {
-                        // Change the link to the user defined downlink.
-                        this.set_link(node[i].getAttribute("data-downlink"), node[i]);
-                    }
-
-                    break;
+                        break;
 
                     // If the domain is invalid.
-                case 3:
-                    // Set the image to yellow.
-                    this.set_image("error", node[i]);
+                    case 3:
+                        // Set the image to yellow.
+                        this.set_image("error", nodes[i]);
 
-                    // Set the link to http://isitup.org/d/<data-domain>
-                    this.set_link(this.server + "d/" + node[i].getAttribute("data-domain"), node[i]);
+                        // Set the link to http://isitup.org/d/<data-domain>
+                        this.set_link(this.server + "d/" + nodes[i].getAttribute("data-domain"), nodes[i]);
 
-                    break;
+                        break;
                 }
 
                 // Update it with the checked parameter.
-                node[i].setAttribute("data-checked", true);
+                nodes[i].setAttribute("data-checked", true);
             }
+        }
+    },
+
+    // Function to update the image and link of a given widget.
+    update_widget: function(image, attribute, node)
+    {
+        // Change the icon.
+        this.set_image(image, node);
+
+        if (node.hasAttribute(attribute))
+        {
+        // Change the link to the user defined link.
+            this.set_link(node.getAttribute(attribute), node);
         }
     },
 
@@ -188,7 +176,7 @@ var isitup = {
     {
         re = /^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}$/;
 
-        return (re.test(domain)) ? true : false;
+        return re.test(domain);
     },
 
     // Checks if a value is in a list.
@@ -197,10 +185,9 @@ var isitup = {
     // @output boolean
     in_list: function(value, list)
     {
-        for (var i = 0; i < list.length; i++) {
-            if (list[i] == value) {
-                return true;
-            }
+        for (var i = 0; i < list.length; i++)
+        {
+            if (list[i] === value) return true;
         }
 
         return false;
@@ -216,7 +203,8 @@ var isitup = {
         var img = new Image(16,16);
 
         // Load each image to our object.
-        for (var i = 0; i < images.length; i++) {
+        for (var i = 0; i < images.length; i++)
+        {
             img.src = this.server + "widget/img/" + images[i] + ".png";
         }
     }
